@@ -29,6 +29,7 @@
 *.dylib
 
 # Executables
+crypto
 *.exe
 *.out
 *.app
