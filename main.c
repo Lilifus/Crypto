@@ -18,19 +18,23 @@ int main(int argc, char** argv){
     // printf("%d %d\n", s, t);
 
     
-    int n,k;
+    mpz_t n,k;
+    mpz_init(n);
+    mpz_init(k);
     if(argc == 3){
-        n = atoi(argv[1]);
-        k = atoi(argv[2]);
+        mpz_set_str(n, argv[1], 10);
+        mpz_set_str(k, argv[2], 10);
     }
     else if(argc == 1){
         printf("Quel est l'entier à tester ?\n");
-        scanf("%d", &n);
+        gmp_scanf("%Zd", n);
         printf("Quel est le nombre de tests ?\n");
-        scanf("%d", &k);
+        gmp_scanf("%Zd", k);
     }
     else{
         printf("Usage: %s <n> <k>\n", argv[0]);
+        mpz_clear(n);
+        mpz_clear(k);
         return 1;
     }
     printf("Test de Fermat : ");
@@ -47,6 +51,9 @@ int main(int argc, char** argv){
     else{
         printf("Compose\n");
     }
+
+    mpz_clear(n);
+    mpz_clear(k);
 
     return 0;
 }

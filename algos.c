@@ -1,85 +1,106 @@
 #include "algos.h"
 
-void square_and_multiply(mpz_t a, int n, int H, mpz_t *result) {
-  
-    mpz_set_ui((*result), 1);
-    mpz_t tmp;
-    mpz_init(tmp);
-    mpz_set(tmp, a);
-    while (H > 0) {
-    if (H%2) {
-        mpz_mul((*result), (*result), tmp);
-        mpz_mod_ui((*result), (*result), n);
+void square_and_multiply(mpz_t a, mpz_t n, mpz_t H, mpz_t *result) {
+    //Premiere version
+    // mpz_set_ui((*result), 1);
+    // mpz_t tmp;
+    // mpz_init(tmp);
+    // mpz_set(tmp, a);
+    // while (mpz_cmp_ui(H,0) > 0) {
+    //     if (mpz_odd_p(H)) {
+    //         mpz_mul((*result), (*result), tmp);
+    //         mpz_mod((*result), (*result), n);
+    //     }
+    //     mpz_mul(tmp, tmp, tmp);
+    //     mpz_mod(tmp, tmp, n);
+    //     mpz_div_ui(H, H, 2);
+    // }
+    // mpz_clear(tmp);
+
+    //version avec string
+    char * bin = mpz_get_str(NULL,2,H);  
+    int i;                               
+    mpz_set((*result),a); 
+    for(i = 1; i < strlen(bin);i++) 
+    {                             
+        mpz_mul((*result),(*result),(*result));
+        mpz_mod((*result),(*result),n);
+        if(bin[i] == '1')
+        {
+            mpz_mul((*result),(*result),a);
+            mpz_mod((*result),(*result),n);
+        }
     }
-    mpz_mul(tmp, tmp, tmp);
-    mpz_mod_ui(tmp, tmp, n);
-    H/=2;
-    }
-    mpz_clear(tmp);
 }
 
 //return 1 if n is prime, 0 otherwise
-int Fermat(int n, int k){
+int Fermat(mpz_t n, mpz_t k){
     srand(time(NULL));
-    for(int i = 0; i < k; i++){
+    mpz_t h;
+    mpz_init(h);
+    mpz_set_ui(h, mpz_get_ui(n)-1);
+    for(int i = 0; i < mpz_get_ui(k); i++){
         mpz_t a;
         mpz_init(a);
-        mpz_set_ui(a, (rand()%(n-2))+1);
+        mpz_set_ui(a, (rand()%(mpz_get_ui(n)-2))+1);
         mpz_t r;
         mpz_init(r);
-        square_and_multiply(a,n,n-1,&r);
+        square_and_multiply(a,n,h,&r);
         if(mpz_cmp_ui(r, 1)){
             mpz_clear(a);
             mpz_clear(r);
+            mpz_clear(h);
             return 0;
         }
         mpz_clear(a);
         mpz_clear(r);
     }
+    mpz_clear(h);
     return 1;
 }
 
-int decompose(int n, int* t){
-    int i = 0;
-    n--;
-    (*t) = n;
-    while(n>0){
-        if(n%2){
-            return i;
+//decompose n-1 en 2^s * t	et return s et t
+void decompose(mpz_t n, mpz_t* s, mpz_t* t){
+    mpz_set_ui((*s), 0);
+    mpz_sub_ui(n, n, 1);
+    mpz_set(*t, n);
+    while(mpz_cmp_ui(n, 0) > 0){
+        if(mpz_odd_p(n)){
+            return;
         }
         else{
-            i++;
-            n/=2;
-            (*t) = n;
+            mpz_add_ui((*s), (*s), 1);
+            mpz_div_ui(n, n, 2);
+            mpz_set(*t, n);
         }
     }
-    return i;
 }
 
 //return 1 if n is prime, 0 otherwise
-int Miller_Rabin(int n, int k){
+int Miller_Rabin(mpz_t n, mpz_t k){
     srand(time(NULL));
-    int t;
-    int s = decompose(n, &t);
-
-    for(int i = 1; i < k; i++){
+    mpz_t s, t;
+    mpz_init(s);
+    mpz_init(t);
+    decompose(n, &s, &t);
+    for(int i = 1; i < mpz_get_ui(k); i++){
         mpz_t a;
         mpz_init(a);
-        mpz_set_ui(a,(rand()%(n-1))+1);
+        mpz_set_ui(a,(rand()%(mpz_get_ui(n)-1))+1);
         mpz_t y;
         mpz_init(y); 
         square_and_multiply(a,n,t,&y);
 
-        if(mpz_cmp_ui(y, 1) && mpz_cmp_ui(y, n-1)){
-            for(int j = 1; j < s-1; j++){
+        if(mpz_cmp_ui(y, 1) && mpz_cmp_ui(y, mpz_get_ui(n)-1)){
+            for(int j = 1; j < mpz_get_ui(s)-1; j++){
                 mpz_mul(y, y, y);
-                mpz_mod_ui(y, y, n);
+                mpz_mod(y, y, n);
 
                 if(!mpz_cmp_ui(y, 1)){
                     mpz_clear(y);
                     return 0;
                 }
-                if(!mpz_cmp_ui(y, n-1)){
+                if(!mpz_cmp_ui(y, mpz_get_ui(n)-1)){
                     break;
                 }
             }
