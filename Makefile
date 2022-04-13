@@ -32,7 +32,7 @@ compile:$(OBJS)
 
 
 
-DOSSIER = EJJED_Zakaria
+DOSSIER = DM_Crypto
 FILES = Makefile
 .PHONY: zip
 zip:
