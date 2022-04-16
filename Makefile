@@ -6,8 +6,8 @@ HSRC = *.h
 OBJS = main.o algos.o
 EX=crypto
 
-N=7
-K=10
+N=6421
+K=100
 
 
 .PHONY:run
@@ -32,7 +32,7 @@ compile:$(OBJS)
 
 
 
-DOSSIER = DM_Crypto
+DOSSIER = DJEBLAHI_Ahmed_EJJED_Zakaria
 FILES = Makefile
 .PHONY: zip
 zip:
