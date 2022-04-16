@@ -33,7 +33,7 @@ compile:$(OBJS)
 
 
 DOSSIER = DJEBLAHI_Ahmed_EJJED_Zakaria
-FILES = Makefile
+FILES = Readme.md Makefile
 .PHONY: zip
 zip:
 	rm -rf $(DOSSIER)
