@@ -3,10 +3,10 @@ CFLAGS = -g -c -Wall
 LDFLAGS = -lm -lgmp
 CSRC = *.c
 HSRC = *.h
-OBJS = main.o algos.o
+OBJS = main.o algos.o tools.o
 EX=crypto
 
-N=6421
+N=95647806479275528135733781266203904794419563064407
 K=100
 
 
@@ -45,7 +45,6 @@ zip:
 	ls -l
 
 .PHONY:clean
-
 clean:
 	rm -r *.o
 	rm -r $(EX)
