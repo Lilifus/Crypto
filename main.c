@@ -7,6 +7,8 @@
         //cela afin de ne plus avoir a parcourir le tableau
         //mais le tableau sera probablement immense
         //donc à voir si cela est véritablement utile
+
+        //Probleme ==> comment on accede a une case tab[n] quand mpz_t n est plus grand qu'un int ?
         
 //Attention
 //Voir si c'est normal que seul les primes soit reconnues et non les pseudoprimes
@@ -21,6 +23,7 @@ int main(int argc, char** argv){
 
     mpz_t n,k;
     mpz_inits(n,k,NULL);
+    
 
     //Lecture de n et k
     if(argc == 3){ // if n and k are given as arguments
