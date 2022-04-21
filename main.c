@@ -1,5 +1,18 @@
 #include "algos.h"
 
+//MEMO:
+    //Pour check_tableau:
+        //peut etre remplacer le tableau mpz_t tab[k] par un table int tab[n] init à 0
+        //et pour un a valant x on met tab[x] = 1
+        //cela afin de ne plus avoir a parcourir le tableau
+        //mais le tableau sera probablement immense
+        //donc à voir si cela est véritablement utile
+        
+//Attention
+//Voir si c'est normal que seul les primes soit reconnues et non les pseudoprimes
+
+//A part cela, le DM me semble complet (si on oublie pas le README.md)
+
 //ERROR CODE
 //-1 : error allocation memory
 
@@ -47,6 +60,23 @@ int main(int argc, char** argv){
         return 1;
     }
 
+    //Check if n and k are usable
+    if(mpz_cmp_ui(n,0)<=0 || mpz_cmp_ui(k,0)<=0){
+        printf("Usage: %s <n> <k>\n", argv[0]);
+        printf("n and k must be positive\n");
+        mpz_clears(n,k,NULL);
+        return 1;
+    }
+    mpz_t n_1;
+    mpz_init(n_1);
+    mpz_sub_ui(n_1, n, 1);
+    if(mpz_cmp(n_1,k)<=0){
+        printf("Usage: %s <n> <k>\n", argv[0]);
+        printf("k must be smaller than n-1\n");
+        mpz_clears(n,k,n_1,NULL);
+        return 1;
+    }
+
     // Affichage des résultats
     printf("Fermat : ");
     int rtrn = Fermat(n,k);
@@ -73,7 +103,7 @@ int main(int argc, char** argv){
         return 1;
     }
 
-    mpz_clears(n,k,NULL);
+    mpz_clears(n,k,n_1,NULL);
 
     return 0;
 }
