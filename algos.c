@@ -19,6 +19,7 @@ void square_and_multiply(mpz_t a, mpz_t n, mpz_t H, mpz_t result) {
 
 //return 1 if n is prime, 0 otherwise
 int Fermat(mpz_t n, mpz_t k){
+    //Version tableau de mpz_t
     mpz_t *tab = malloc(sizeof(mpz_t)*mpz_get_ui(k));
     if(tab == NULL){
         printf("Erreur d'allocation de mémoire\n");
@@ -28,6 +29,7 @@ int Fermat(mpz_t n, mpz_t k){
     gmp_randstate_t rstate; // seed for random number generation
     mpz_inits(h, a, r, n_2, NULL);
     gmp_randinit_default(rstate);
+    gmp_randseed_ui(rstate, time(NULL));
 
     mpz_sub_ui(n_2, n, 2);
     mpz_sub_ui(h, n, 1);//set the exponent to n-1
@@ -80,6 +82,7 @@ void decompose(mpz_t n, mpz_t s, mpz_t t){
 //return 1 if n is prime, 0 otherwise
 int Miller_Rabin(mpz_t n, mpz_t k){
 
+    //Version tableau de mpz_t
     mpz_t *tab = malloc(sizeof(mpz_t)*mpz_get_ui(k));
     if(tab == NULL){
         printf("Erreur d'allocation de mémoire\n");
@@ -92,6 +95,7 @@ int Miller_Rabin(mpz_t n, mpz_t k){
     mpz_sub_ui(n_1, n, 1);
     mpz_set_ui(two, 2);
     gmp_randinit_default(rstate);
+    gmp_randseed_ui(rstate, time(NULL));
 
     decompose(n, s, t); // decompose n-1 in 2^s * t and store s and t
 
