@@ -1,24 +1,5 @@
 #include "algos.h"
 
-//MEMO:
-    //Pour check_tableau:
-        //peut etre remplacer le tableau mpz_t tab[k] par un table int tab[n] init à 0
-        //et pour un a valant x on met tab[x] = 1
-        //cela afin de ne plus avoir a parcourir le tableau
-        //mais le tableau sera probablement immense
-        //donc à voir si cela est véritablement utile
-
-        //Probleme ==> comment on accede a une case tab[n] quand mpz_t n est plus grand qu'un int ?
-        
-//Attention
-//Voir si c'est normal que seul les primes soit reconnues et non les pseudoprimes
-
-//A part cela, le DM me semble complet (si on oublie pas le README.md)
-
-//ERROR CODE
-//-1 : error allocation memory
-
-
 int main(int argc, char** argv){
 
     mpz_t n,k;
@@ -90,7 +71,7 @@ int main(int argc, char** argv){
         printf("Composite\n");
     }
     else{
-        printf("Error %d\n", rtrn);                                             
+        printf("Error : Fermat returned %d\n", rtrn);                                            
         return 1;
     }
     printf("Miller-Rabin : ");
@@ -102,7 +83,7 @@ int main(int argc, char** argv){
         printf("Composite\n");
     }
     else{
-        printf("Error %d\n", rtrn);
+        printf("Error : Miller-Rabin returned %d\n", rtrn);
         return 1;
     }
 
