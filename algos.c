@@ -3,22 +3,38 @@
 
 // return : result = a^H mod n
 void square_and_multiply(mpz_t a, mpz_t n, mpz_t H, mpz_t result) {
-    char * Hbin = mpz_get_str(NULL,2,H);  // H in binary   
+    size_t size = mpz_sizeinbase(H,2);
     mpz_set((result),a); 
-    for(int i = 1; i < strlen(Hbin);i++) //check each bit of H
+    for(int i = size-2; i >= 0;i--) //check each bit of H
     {                       
         //square     
-        mul_and_mod(result,result,n,result);
-        if(Hbin[i] == '1')//multiply
+        mpz_mul(result,result,result);
+        mpz_mod(result,result,n);
+        if(mpz_tstbit(H,i)==1)
         {
-            mul_and_mod(result,a,n,result);
+            mpz_mul(result,result,a);
+            mpz_mod(result,result,n);
         }
     }
-    free(Hbin);
+}
+
+void mod(mpz_t modulo, mpz_t a, mpz_t n) {
+    mpz_t invert;
+    mpz_init(invert);
+    mpz_invert(invert, a, n);
+    // gmp_printf("invert: %Zd\n",invert);
+    mpz_mul(modulo, a, invert);
+    mpz_sub(modulo, a, modulo);
+    if(mpz_cmp(modulo,n)>=0){
+        mpz_sub(modulo,modulo,n);
+    }
 }
 
 //return 1 if n is prime, 0 otherwise
 int Fermat(mpz_t n, mpz_t k){
+    float total;
+    time_t start, end;
+    total = 0.0;
     mpz_t *tab = malloc(sizeof(mpz_t)*mpz_get_ui(k));
     if(tab == NULL){
         printf("Erreur d'allocation de mémoire\n");
@@ -39,7 +55,10 @@ int Fermat(mpz_t n, mpz_t k){
             mpz_urandomm(a, rstate, n_2); // a = rand(1,n-2) (n-2 included)
             mpz_add_ui(a, a, 1);
         }
+        start = clock();
         square_and_multiply(a,n,h,r);
+        end = clock();
+        total += (float)(end-start)/CLOCKS_PER_SEC;
         if(mpz_cmp_ui(r, 1)){ // if r != 1 mod n
             mpz_clears(h, a, r, n_2, NULL);
             gmp_randclear(rstate);
@@ -50,6 +69,7 @@ int Fermat(mpz_t n, mpz_t k){
     mpz_clears(h, a, r, n_2, NULL);
     gmp_randclear(rstate);
     free_tab(tab, mpz_get_ui(k));
+    printf("total: %f\n", total);
     return 1; // n is prime
 }
 
@@ -80,6 +100,9 @@ void decompose(mpz_t n, mpz_t s, mpz_t t){
 
 //return 1 if n is prime, 0 otherwise
 int Miller_Rabin(mpz_t n, mpz_t k){
+    float total;
+    time_t start, end;
+    start = clock();
     mpz_t *tab = malloc(sizeof(mpz_t)*mpz_get_ui(k));
     if(tab == NULL){
         printf("Erreur d'allocation de mémoire\n");
@@ -131,5 +154,8 @@ int Miller_Rabin(mpz_t n, mpz_t k){
     mpz_clears(s, t, two, n_1, a, y, NULL);
     gmp_randclear(rstate);
     free_tab(tab, mpz_get_ui(k));
+    end = clock();
+    total = (float)(end-start)/CLOCKS_PER_SEC;
+    printf("total: %f\n", total);
     return 1; // n is prime
 }
