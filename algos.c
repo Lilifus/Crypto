@@ -3,43 +3,27 @@
 
 // return : result = a^H mod n
 void square_and_multiply(mpz_t a, mpz_t n, mpz_t H, mpz_t result) {
-    size_t size = mpz_sizeinbase(H,2);
-    mpz_set((result),a); 
-    for(int i = size-2; i >= 0;i--) //check each bit of H
-    {                       
+    size_t size = mpz_sizeinbase(H,2); // size of H in base 2
+    mpz_set(result,a); 
+    for(int i = size-2; i >= 0;i--){ //check each bit of H except the MSB                       
         //square     
         mpz_mul(result,result,result);
         mpz_mod(result,result,n);
-        if(mpz_tstbit(H,i)==1)
-        {
+        if(mpz_tstbit(H,i)==1){ //if the bit is 1, multiply by a
             mpz_mul(result,result,a);
             mpz_mod(result,result,n);
         }
     }
 }
 
-void mod(mpz_t modulo, mpz_t a, mpz_t n) {
-    mpz_t invert;
-    mpz_init(invert);
-    mpz_invert(invert, a, n);
-    // gmp_printf("invert: %Zd\n",invert);
-    mpz_mul(modulo, a, invert);
-    mpz_sub(modulo, a, modulo);
-    if(mpz_cmp(modulo,n)>=0){
-        mpz_sub(modulo,modulo,n);
-    }
-}
-
 //return 1 if n is prime, 0 otherwise
 int Fermat(mpz_t n, mpz_t k){
-    float total;
-    time_t start, end;
-    total = 0.0;
-    mpz_t *tab = malloc(sizeof(mpz_t)*mpz_get_ui(k));
+    mpz_t *tab = malloc(sizeof(mpz_t)*mpz_get_ui(k)); //the table that will contain the all the random a used
     if(tab == NULL){
         printf("Erreur d'allocation de mémoire\n");
         return -1;
     }
+
     mpz_t h, a, r, n_2;
     gmp_randstate_t rstate; // seed for random number generation
     mpz_inits(h, a, r, n_2, NULL);
@@ -51,14 +35,11 @@ int Fermat(mpz_t n, mpz_t k){
     for(int i = 0; mpz_cmp_ui(k,i)>0; i++){
         mpz_urandomm(a, rstate, n_2); // a = rand(1,n-2) (n-2 included)
         mpz_add_ui(a, a, 1);
-        while (check_tab(tab, i, a) == 1){
-            mpz_urandomm(a, rstate, n_2); // a = rand(1,n-2) (n-2 included)
+        while (check_tab(tab, i, a) == 1){// check if a is already in the table
+            mpz_urandomm(a, rstate, n_2);
             mpz_add_ui(a, a, 1);
         }
-        start = clock();
         square_and_multiply(a,n,h,r);
-        end = clock();
-        total += (float)(end-start)/CLOCKS_PER_SEC;
         if(mpz_cmp_ui(r, 1)){ // if r != 1 mod n
             mpz_clears(h, a, r, n_2, NULL);
             gmp_randclear(rstate);
@@ -69,7 +50,6 @@ int Fermat(mpz_t n, mpz_t k){
     mpz_clears(h, a, r, n_2, NULL);
     gmp_randclear(rstate);
     free_tab(tab, mpz_get_ui(k));
-    printf("total: %f\n", total);
     return 1; // n is prime
 }
 
@@ -100,10 +80,7 @@ void decompose(mpz_t n, mpz_t s, mpz_t t){
 
 //return 1 if n is prime, 0 otherwise
 int Miller_Rabin(mpz_t n, mpz_t k){
-    float total;
-    time_t start, end;
-    start = clock();
-    mpz_t *tab = malloc(sizeof(mpz_t)*mpz_get_ui(k));
+    mpz_t *tab = malloc(sizeof(mpz_t)*mpz_get_ui(k)); //the table that will contain the all the random a used
     if(tab == NULL){
         printf("Erreur d'allocation de mémoire\n");
         return -1;
@@ -122,8 +99,8 @@ int Miller_Rabin(mpz_t n, mpz_t k){
     for(int i = 1; i <= mpz_get_ui(k); i++){  
         mpz_urandomm(a, rstate, n_1);// set a random number between 1 and n-1(included)
         mpz_add_ui(a, a, 1);
-        while (check_tab(tab, i-1, a) == 1){
-            mpz_urandomm(a, rstate, n_1);// set a random number between 1 and n-1(included)
+        while (check_tab(tab, i-1, a) == 1){// check if a is already in the table
+            mpz_urandomm(a, rstate, n_1);
             mpz_add_ui(a, a, 1);
         }
         square_and_multiply(a,n,t,y);
@@ -154,8 +131,5 @@ int Miller_Rabin(mpz_t n, mpz_t k){
     mpz_clears(s, t, two, n_1, a, y, NULL);
     gmp_randclear(rstate);
     free_tab(tab, mpz_get_ui(k));
-    end = clock();
-    total = (float)(end-start)/CLOCKS_PER_SEC;
-    printf("total: %f\n", total);
     return 1; // n is prime
 }
