@@ -75,20 +75,19 @@ void* Fermat_for_threads(void* arg){
 
         square_and_multiply(a,n,h,r);
         if(mpz_cmp_ui(r, 1)){ // if r != 1 mod n
-            mpz_clears(h, a, r, n_2, NULL);
+            mpz_clears(n,k,h, a, r, n_2, NULL);
             gmp_randclear(rstate);
             v->ret = 0;
-            pthread_exit(NULL);
+            return NULL;
         }
     }
-    mpz_clears(h, a, r, n_2, NULL);
+    mpz_clears(n,k,h, a, r, n_2, NULL);
     gmp_randclear(rstate);
-    pthread_exit(NULL);
+    return NULL;
 }
 
 int Fermat_with_threads(mpz_t n, mpz_t k, int nb_threads){
     pthread_t threads[nb_threads];
-    void* status;
 
     int complement = 1;
     values* args = malloc(sizeof(values));
@@ -129,7 +128,7 @@ int Fermat_with_threads(mpz_t n, mpz_t k, int nb_threads){
 
     int ret = 1;
     for(int i = 0; i < nb_threads; i++){
-        pthread_join(threads[i], &status);
+        pthread_join(threads[i], NULL);
         if(args->ret == 0){
             ret = 0;
         }
@@ -255,7 +254,7 @@ void* Miller_Rabin_for_thread(void* arg){
                     mpz_clears(s, t, two, n_1, a, y, NULL);
                     gmp_randclear(rstate);
                     args->ret = 0;
-                    pthread_exit(NULL);
+                    return NULL;
                 }
                 if(!mpz_cmp(y, n_1)){ // if y == -1 mod n
                     break;
@@ -266,18 +265,17 @@ void* Miller_Rabin_for_thread(void* arg){
                 mpz_clears(s, t, two, n_1, a, y, NULL);
                 gmp_randclear(rstate);
                 args->ret = 0;
-                pthread_exit(NULL);
+                return NULL;
             }
         }
     }
     mpz_clears(n, k, s, t, two, n_1, a, y, NULL);
     gmp_randclear(rstate);
-    pthread_exit(NULL);
+    return NULL;
 }
 
 int Miller_Rabin_with_threads(mpz_t n, mpz_t k, int nb_threads){
     pthread_t threads[nb_threads];
-    void* status;
 
 
     int complement = 1;
@@ -325,7 +323,7 @@ int Miller_Rabin_with_threads(mpz_t n, mpz_t k, int nb_threads){
 
     int ret = 1;
     for(int i = 0; i < nb_threads; i++){
-        pthread_join(threads[i], &status);
+        pthread_join(threads[i], NULL);
         if(args->ret == 0){
             ret = 0;
         }
