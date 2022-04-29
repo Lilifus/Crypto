@@ -5,10 +5,9 @@
 typedef struct values{
     mpz_t n;
     mpz_t k;
-    mpz_t *tab;
+    mpz_t *a;
     mpz_t s;
     mpz_t t;
-    int id;
     int ret;
 } values;
 

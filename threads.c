@@ -6,50 +6,46 @@
 //Function that will use threads to run Fermat
 int Fermat_with_threads(mpz_t n, mpz_t k, int nb_threads){
     pthread_t threads[nb_threads];
-    //if k/nb_threads is not an integer, we will have to put a different number of iteration on the last threads, 
-    //and complement determine the number of threads
-    int complement = 1;
-    values* args = malloc(sizeof(values));
-    values* last = malloc(sizeof(values));
 
-    mpz_inits(args->n, args->k, last->n, last->k, NULL);
-    mpz_set(args->n, n);
-    mpz_set(last->n, n);
-    args->ret = 1;
-    last->ret = 1;
+    values* args = malloc(sizeof(values)*nb_threads);
+
+    for(int i = 0; i < nb_threads; i++){
+        mpz_inits(args[i].n, args[i].k, NULL);
+        mpz_set(args[i].n, n);
+        args[i].ret = 1;
+    }
 
 
     if(mpz_get_ui(k)%nb_threads == 0){
         //if k is divisible by nb_threads we distribute k/nb_threads iterations on each thread
-        mpz_divexact_ui(args->k, k, nb_threads);
-        mpz_divexact_ui(last->k, k, nb_threads);
+        for(int i = 0; i< nb_threads - 1; i++) mpz_divexact_ui(args[i].k, k, nb_threads);
+        mpz_divexact_ui(args[nb_threads-1].k, k, nb_threads);
     }
     else if(mpz_get_ui(k)%(nb_threads-1) == 0){
         //if k is divisible by nb_threads-1 we distribute k/nb_threads 
         //iterations on each thread and add the rest to the last thread
-        mpz_mod_ui(last->k, k, nb_threads);
-        mpz_divexact_ui(args->k, k, nb_threads);
-        mpz_add(last->k, last->k, args->k);
+        mpz_mod_ui(args[nb_threads-1].k, k, nb_threads);
+        for(int i = 0; i< nb_threads - 1; i++) mpz_divexact_ui(args[i].k, k, nb_threads);
+        mpz_add(args[nb_threads-1].k, args[nb_threads-1].k, args[0].k);
     }
     else if(mpz_get_ui(k)<nb_threads){
         //if k is smaller than nb_threads each thread will have to run 1 iteration
         // and the last thread will run nothing 
         //(complement will tell how many threads will not run)
-        mpz_set_ui(last->k, 0);
-        mpz_set_ui(args->k, 1);
-        complement = nb_threads - mpz_get_ui(k);
+        mpz_set_ui(args[nb_threads-1].k, 0);
+        for(int i = 0; i< nb_threads - 1; i++) mpz_set_ui(args[i].k, 1);
     }
     else{
         // we distribute k/nb_threads iterations on each thread 
         // and add the rest to the last thread
-        mpz_mod_ui(last->k, k, nb_threads-1);
-        mpz_sub(args->k, k, last->k);
-        mpz_divexact_ui(args->k, args->k, nb_threads-1);
+        mpz_mod_ui(args[nb_threads-1].k, k, nb_threads-1);
+        for(int i = 0; i< nb_threads - 1; i++) mpz_sub(args[i].k, k, args[nb_threads-1].k);
+        for(int i = 0; i< nb_threads - 1; i++) mpz_divexact_ui(args[i].k, args[i].k, nb_threads-1);
     }
 
     //creation of the table of random values
-    args->tab = malloc(sizeof(mpz_t)*mpz_get_ui(k));
-    if(args->tab == NULL){
+    mpz_t* tab = malloc(sizeof(mpz_t)*mpz_get_ui(k));
+    if(tab == NULL){
         printf("Erreur d'allocation de mémoire\n");
         return -1;
     }
@@ -63,42 +59,45 @@ int Fermat_with_threads(mpz_t n, mpz_t k, int nb_threads){
     for(int i=0; i<mpz_get_ui(k); i++){
         mpz_urandomm(a, rstate, n_2); // a = rand(1,n-2) (n-2 included)
         mpz_add_ui(a, a, 1);
-        while (check_tab(args->tab, i, a) == 1){// check if a is already in the table
+        while (check_tab(tab, i, a) == 1){// check if a is already in the table
             mpz_urandomm(a, rstate, n_2);
             mpz_add_ui(a, a, 1);
         }
     }
-    last->tab = args->tab;
-    args->id=0;
+    
+    int l = 0;
+    for(int i = 0; i < nb_threads; i++){
+        args[i].a = malloc(sizeof(mpz_t)*mpz_get_ui(args[i].k));
+        for(int j=0;j<mpz_get_ui(args[i].k);j++){
+            mpz_init(args[i].a[j]);
+            mpz_set(args[i].a[j], tab[l]);
+            l++;
+        }
+    }
+
 
     //create the threads
     for(int i = 0; i < nb_threads ; i++){
-        if(i<nb_threads-complement)
-        {
-            pthread_create(&threads[i], NULL, Fermat_for_threads, (void*)args);
-            args->id += mpz_get_ui(args->k);
-            last->id = args->id;
-        }
-        else if(last->k > 0) //if last->k is 0, we don't need to create a thread
-        {
-            pthread_create(&threads[i], NULL, Fermat_for_threads, (void*)last);
-        }
+        if(args[i].k>0) pthread_create(&threads[i], NULL, Fermat_for_threads, (void*)args);
     }
 
     int ret = 1;
     for(int i = 0; i < nb_threads; i++){
         pthread_join(threads[i], NULL);
-        if((args->ret == 0) || (last->ret == 0)){
+        if(args[i].ret == 0){
             ret = 0;
         }
     }
 
-    mpz_clears(args->n, args->k, last->n, last->k, NULL);
     mpz_clears(a,n_2,NULL);
+    
     gmp_randclear(rstate);
-    free_tab(args->tab, mpz_get_ui(k));
+    
+    for(int i = 0; i< nb_threads - 1; i++) {
+        free_tab(args[i].a, mpz_get_ui(args[i].k));
+        mpz_clears(args[i].n, args[i].k, NULL); 
+    }
     free(args);
-    free(last);
     return ret;
 }
 
@@ -130,7 +129,7 @@ void* Fermat_for_threads(void* arg){
     mpz_sub_ui(h, n, 1);//set the exponent to n-1
     for(int i = 0; mpz_cmp_ui(k,i)>0; i++){
 
-        mpz_set(a, v->tab[v->id+i]); //take one of the random a
+        mpz_set(a, v->a[i]); //take one of the random a
 
         square_and_multiply(a,n,h,r);
         if(mpz_cmp_ui(r, 1)){ // if r != 1 mod n
@@ -171,8 +170,7 @@ void* Miller_Rabin_for_thread(void* arg){
     gmp_randseed_ui(rstate, time(NULL));
 
     for(int i = 1; i <= mpz_get_ui(k); i++){  
-        mpz_urandomm(a, rstate, n_1);// set a random number between 1 and n-1(included)
-        mpz_add_ui(a, a, 1);
+        mpz_set(a, args->a[i-1]);
 
         square_and_multiply(a,n,t,y);
 
@@ -210,56 +208,54 @@ void* Miller_Rabin_for_thread(void* arg){
 //thread using fuction for miller-rabin
 int Miller_Rabin_with_threads(mpz_t n, mpz_t k, int nb_threads){
     pthread_t threads[nb_threads];
-    //if k/nb_threads is not an integer, we will have to put a different number of iteration on the last threads, 
-    //and complement determine the number of threads
-    int complement = 1;
 
-    values* args = malloc(sizeof(values));
-    values* last = malloc(sizeof(values));
+    values* args = malloc(sizeof(values)*nb_threads);
 
-    mpz_inits(args->n, args->k, args->s, args->t, last->n, last->k, last->s, last->t, NULL);
-    mpz_set(args->n, n);
-    mpz_set(last->n, n);
-    args->ret = 1;
-    last->ret = 1;
-
+    mpz_t s,t;
+    mpz_inits(s, t, NULL);
     //we use decompose only once before creating the threads
-    decompose(n, args->s, args->t); // decompose n-1 in 2^s * t and store s and t
-    mpz_set(last->s, args->s);
-    mpz_set(last->t, args->t);
+    decompose(n, s, t); // decompose n-1 in 2^s * t and store s and t
+
+    for(int i = 0; i < nb_threads; i++){
+        mpz_inits(args[i].n, args[i].k, args[i].s, args[i].t, NULL);
+        mpz_set(args[i].n, n);
+        args[i].ret = 1;
+        mpz_set(args[i].s, s);
+        mpz_set(args[i].t, t);
+    }
+
 
 
     if(mpz_get_ui(k)%nb_threads == 0){
         //if k is divisible by nb_threads we distribute k/nb_threads iterations on each thread
-        mpz_divexact_ui(args->k, k, nb_threads);
-        mpz_divexact_ui(last->k, k, nb_threads);
+        for(int i = 0; i< nb_threads - 1; i++) mpz_divexact_ui(args[i].k, k, nb_threads);
+        mpz_divexact_ui(args[nb_threads-1].k, k, nb_threads);
     }
     else if(mpz_get_ui(k)%(nb_threads-1) == 0){
         //if k is divisible by nb_threads-1 we distribute k/nb_threads 
         //iterations on each thread and add the rest to the last thread
-        mpz_mod_ui(last->k, k, nb_threads);
-        mpz_divexact_ui(args->k, k, nb_threads);
-        mpz_add(last->k, last->k, args->k);
+        mpz_mod_ui(args[nb_threads-1].k, k, nb_threads);
+        for(int i = 0; i< nb_threads - 1; i++) mpz_divexact_ui(args[i].k, k, nb_threads);
+        mpz_add(args[nb_threads-1].k, args[nb_threads-1].k, args[0].k);
     }
     else if(mpz_get_ui(k)<nb_threads){
         //if k is smaller than nb_threads each thread will have to run 1 iteration
         // and the last thread will run nothing 
         //(complement will tell how many threads will not run)
-        mpz_set_ui(last->k, 0);
-        mpz_set_ui(args->k, 1);
-        complement = nb_threads - mpz_get_ui(k);
+        mpz_set_ui(args[nb_threads-1].k, 0);
+        for(int i = 0; i< nb_threads - 1; i++) mpz_set_ui(args[i].k, 1);
     }
     else{
         // we distribute k/nb_threads iterations on each thread 
         // and add the rest to the last thread
-        mpz_mod_ui(last->k, k, nb_threads-1);
-        mpz_sub(args->k, k, last->k);
-        mpz_divexact_ui(args->k, args->k, nb_threads-1);
+        mpz_mod_ui(args[nb_threads-1].k, k, nb_threads-1);
+        for(int i = 0; i< nb_threads - 1; i++) mpz_sub(args[i].k, k, args[nb_threads-1].k);
+        for(int i = 0; i< nb_threads - 1; i++) mpz_divexact_ui(args[i].k, args[i].k, nb_threads-1);
     }
 
     //creation of the table of random values
-    args->tab = malloc(sizeof(mpz_t)*mpz_get_ui(k));
-    if(args->tab == NULL){
+    mpz_t* tab = malloc(sizeof(mpz_t)*mpz_get_ui(k));
+    if(tab == NULL){
         printf("Erreur d'allocation de mémoire\n");
         return -1;
     }
@@ -273,42 +269,42 @@ int Miller_Rabin_with_threads(mpz_t n, mpz_t k, int nb_threads){
     for(int i=0; i<mpz_get_ui(k); i++){
         mpz_urandomm(a, rstate, n_2); // a = rand(1,n-2) (n-2 included)
         mpz_add_ui(a, a, 1);
-        while (check_tab(args->tab, i, a) == 1){// check if a is already in the table
+        while (check_tab(tab, i, a) == 1){// check if a is already in the table
             mpz_urandomm(a, rstate, n_2);
             mpz_add_ui(a, a, 1);
         }
     }
-    last->tab = args->tab;
-    args->id=0;
+    
+    int l = 0;
+    for(int i = 0; i < nb_threads; i++){
+        args[i].a = malloc(sizeof(mpz_t)*mpz_get_ui(args[i].k));
+        for(int j=0;j<mpz_get_ui(args[i].k);j++){
+            mpz_init(args[i].a[j]);
+            mpz_set(args[i].a[j], tab[l]);
+            l++;
+        }
+    }
 
 
     //create the threads
     for(int i = 0; i < nb_threads ; i++){
-        if(i<nb_threads-complement)
-        {
-            pthread_create(&threads[i], NULL, Fermat_for_threads, (void*)args);
-            args->id += mpz_get_ui(args->k);
-            last->id = args->id;
-        }
-        else if(last->k > 0) //if last->k is 0, we don't need to create a thread
-        {
-            pthread_create(&threads[i], NULL, Fermat_for_threads, (void*)last);
-        }
+        if(args[i].k>0) pthread_create(&threads[i], NULL, Miller_Rabin_for_thread, (void*)args);
     }
 
     int ret = 1;
     for(int i = 0; i < nb_threads; i++){
         pthread_join(threads[i], NULL);
-        if((args->ret == 0) || (last->ret == 0)){
+        if(args[i].ret == 0){
             ret = 0;
         }
     }
 
-    mpz_clears(args->n, args->k, args->s, args->t, last->n, last->k, last->s, last->t, NULL);
     mpz_clears(a,n_2,NULL);
     gmp_randclear(rstate);
-    free_tab(args->tab, mpz_get_ui(k));
+    for(int i = 0; i< nb_threads - 1; i++) {
+        free_tab(args[i].a, mpz_get_ui(args[i].k));
+        mpz_clears(args[i].n, args[i].k, args[i].s, args[i].t, NULL);
+    }
     free(args);
-    free(last);
     return ret;
 }
