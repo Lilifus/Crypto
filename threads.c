@@ -241,7 +241,6 @@ int Miller_Rabin_with_threads(mpz_t n, mpz_t k, int nb_threads){
     else if(mpz_get_ui(k)<nb_threads){
         //if k is smaller than nb_threads each thread will have to run 1 iteration
         // and the last thread will run nothing 
-        //(complement will tell how many threads will not run)
         mpz_set_ui(args[nb_threads-1].k, 0);
         for(int i = 0; i< nb_threads - 1; i++) mpz_set_ui(args[i].k, 1);
     }
