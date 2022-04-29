@@ -92,8 +92,8 @@ int Fermat_with_threads(mpz_t n, mpz_t k, int nb_threads){
     mpz_clears(a,n_2,NULL);
     
     gmp_randclear(rstate);
-    
-    for(int i = 0; i< nb_threads - 1; i++) {
+    free_tab(tab, mpz_get_ui(k));
+    for(int i = 0; i< nb_threads; i++) {
         free_tab(args[i].a, mpz_get_ui(args[i].k));
         mpz_clears(args[i].n, args[i].k, NULL); 
     }
@@ -134,13 +134,15 @@ void* Fermat_for_threads(void* arg){
         square_and_multiply(a,n,h,r);
         if(mpz_cmp_ui(r, 1)){ // if r != 1 mod n
             mpz_clears(h, a, r, n_2, NULL);
-            v->ret = 0; // replace "return 0;"
-            pthread_exit(NULL);
+            v->ret = 0; // replace "return 0;"7
+            return NULL;
+            // pthread_exit(NULL);
         }
     }
     mpz_clears(h, a, r, n_2, NULL);
     //no need for a return 1 because v->ret is already set to 1
-    pthread_exit(NULL);
+    return NULL;
+    // pthread_exit(NULL);
 }
 
 
@@ -299,9 +301,10 @@ int Miller_Rabin_with_threads(mpz_t n, mpz_t k, int nb_threads){
         }
     }
 
-    mpz_clears(a,n_2,NULL);
+    mpz_clears(s,t,a,n_2,NULL);
     gmp_randclear(rstate);
-    for(int i = 0; i< nb_threads - 1; i++) {
+    free_tab(tab, mpz_get_ui(k));
+    for(int i = 0; i< nb_threads; i++) {
         free_tab(args[i].a, mpz_get_ui(args[i].k));
         mpz_clears(args[i].n, args[i].k, args[i].s, args[i].t, NULL);
     }
