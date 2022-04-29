@@ -1,9 +1,16 @@
 #include "algos.h"
 
+#define DISPLAY_TIME 1
+#define ACTIVE_THREADS 1
+#define NB_THREADS 8
+
 int main(int argc, char** argv){
 
     mpz_t n,k;
     mpz_inits(n,k,NULL);
+
+    struct timespec start, end;
+    double time_spent;
     
 
     if(argc!=3){// Error if the user input is not correct
@@ -40,32 +47,48 @@ int main(int argc, char** argv){
     }
 
     // Affichage des résultats
-    printf("Fermat : ");
-    int rtrn = Fermat(n,k);
-    if(rtrn == 1){
-        printf("Prime\n");
-    }
-    else if(rtrn==0){
-        printf("Composite\n");
+
+    int rtrn;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    if(ACTIVE_THREADS){
+        //FERMAT
+        rtrn = Fermat_with_threads(n,k,NB_THREADS);
     }
     else{
-        printf("Error : Fermat returned %d\n", rtrn);                                            
-        return 1;
+        //FERMAT
+        rtrn = Fermat(n,k);
+    }
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    time_spent = (end.tv_sec - start.tv_sec);
+    time_spent += (end.tv_nsec - start.tv_nsec) / 1000000000.0;
+    if(rtrn == -1){
+        printf("Error\n");
+    }
+    else{
+        printf("Fermat: %s\n", rtrn==1 ? "Prime" : "Composite");
+        if(DISPLAY_TIME) printf("\tTime: %f\n", time_spent);
     }
 
-    
-    printf("Miller-Rabin : ");
-    rtrn = Miller_Rabin(n,k);
-    if(rtrn == 1){
-        printf("Prime\n");
-    }
-    else if (rtrn==0){
-        printf("Composite\n");
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    if(ACTIVE_THREADS){
+        //MILLER-RABIN THREAD
+        rtrn = Miller_Rabin_with_threads(n,k,NB_THREADS);
     }
     else{
-        printf("Error : Miller-Rabin returned %d\n", rtrn);
-        return 1;
+        //MILLER-RABIN
+        rtrn = Miller_Rabin(n,k);
     }
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    time_spent = (end.tv_sec - start.tv_sec);
+    time_spent += (end.tv_nsec - start.tv_nsec) / 1000000000.0;
+    if(rtrn == -1){
+        printf("Error\n");
+    }
+    else{
+        printf("Miller-Rabin: %s\n", rtrn==1 ? "Prime" : "Composite");
+        if(DISPLAY_TIME) printf("\tTime: %f\n", time_spent);
+    }
+    
 
     mpz_clears(n,k,n_1,NULL);
 
