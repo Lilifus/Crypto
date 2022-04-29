@@ -31,7 +31,6 @@ int Fermat_with_threads(mpz_t n, mpz_t k, int nb_threads){
     else if(mpz_get_ui(k)<nb_threads){
         //if k is smaller than nb_threads each thread will have to run 1 iteration
         // and the last thread will run nothing 
-        //(complement will tell how many threads will not run)
         mpz_set_ui(args[nb_threads-1].k, 0);
         for(int i = 0; i< nb_threads - 1; i++) mpz_set_ui(args[i].k, 1);
     }
@@ -65,6 +64,8 @@ int Fermat_with_threads(mpz_t n, mpz_t k, int nb_threads){
         }
     }
     
+
+    //We distribute the random values to each argu that will be used by the threads
     int l = 0;
     for(int i = 0; i < nb_threads; i++){
         args[i].a = malloc(sizeof(mpz_t)*mpz_get_ui(args[i].k));
@@ -90,7 +91,6 @@ int Fermat_with_threads(mpz_t n, mpz_t k, int nb_threads){
     }
 
     mpz_clears(a,n_2,NULL);
-    
     gmp_randclear(rstate);
     free_tab(tab, mpz_get_ui(k));
     for(int i = 0; i< nb_threads; i++) {
@@ -108,7 +108,7 @@ int Fermat_with_threads(mpz_t n, mpz_t k, int nb_threads){
 //Function used in threads for fermat
 void* Fermat_for_threads(void* arg){
 
-    values* v = (values*) arg; // struct that contains n,k and the return value
+    values* v = (values*) arg; // struct containing the n, k, the randome values and the return value
     mpz_t n;
     mpz_t k;
     mpz_inits(n, k, NULL);
@@ -134,15 +134,13 @@ void* Fermat_for_threads(void* arg){
         square_and_multiply(a,n,h,r);
         if(mpz_cmp_ui(r, 1)){ // if r != 1 mod n
             mpz_clears(h, a, r, n_2, NULL);
-            v->ret = 0; // replace "return 0;"7
+            v->ret = 0; // replace "return 0;"
             return NULL;
-            // pthread_exit(NULL);
         }
     }
     mpz_clears(h, a, r, n_2, NULL);
     //no need for a return 1 because v->ret is already set to 1
     return NULL;
-    // pthread_exit(NULL);
 }
 
 
@@ -153,7 +151,7 @@ void* Fermat_for_threads(void* arg){
 
 //Function used in threads for miller_rabin
 void* Miller_Rabin_for_thread(void* arg){
-    values* args = (values*) arg; // struct containing the n, k, s, t and the return value
+    values* args = (values*) arg; // struct containing the n, k, s, t, the randome values and the return value
     
     mpz_t n, k, s, t;
     mpz_inits(n, k, s, t, NULL);
